@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Input Data — Grebek Pasar</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="pad-bottom">
+<header class="app-header">
+  <a class="back" href="index.html">‹ Menu</a>
+  <div class="brand">Input Data <span class="tag">Grebek</span></div>
+  <div class="setup">
+    <input id="petugas" placeholder="Nama petugas" autocomplete="off">
+    <select id="lokasi">
+      <option value="Pasar Cepogo">Pasar Cepogo</option>
+      <option value="Pasar Bandungan">Pasar Bandungan</option>
+      <option value="Lokasi Lain">Lokasi Lain</option>
+    </select>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tally">
+    <div class="stat"><b id="tTotal">0</b><span>Total Data</span></div>
+    <div class="stat gold"><b id="tPros">0</b><span>Prospek</span></div>
+    <div class="stat green"><b id="tClose">0</b><span>Closing</span></div>
+    <div class="stat"><b id="tPcs">0</b><span>Pcs Terjual</span></div>
+    <div class="stat"><b id="tXcd">0</b><span>Minat XCD2</span></div>
+    <div class="stat"><b id="tBfg">0</b><span>Minat BFG</span></div>
+  </div>
+
+  <!-- INPUT -->
+  <div id="pgInput">
+    <div class="card">
+      <h2>Data Pengunjung</h2>
+      <label class="first">Nama</label>
+      <input type="text" id="nama" placeholder="Nama pelanggan" autocomplete="off">
+
+      <label>No. WhatsApp / HP</label>
+      <input type="tel" id="wa" placeholder="08xxxxxxxxxx" inputmode="numeric">
+
+      <label>Jenis Kendaraan</label>
+      <div class="chips" data-group="kendaraan">
+        <div class="chip" data-val="Pick-up">Pick-up</div>
+        <div class="chip" data-val="Truk kecil">Truk kecil</div>
+        <div class="chip" data-val="Mobil pribadi">Mobil pribadi</div>
+        <div class="chip" data-val="Lainnya">Lainnya</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Ukuran Ban</label>
+          <input type="text" id="ukuran" placeholder="mis. 195R14" autocomplete="off">
+        </div>
+        <div>
+          <label>Merk Ban Sekarang</label>
+          <input type="text" id="merk" placeholder="mis. GT / Dunlop" autocomplete="off">
+        </div>
+      </div>
+
+      <label>Produk Diminati</label>
+      <div class="chips" data-group="produk">
+        <div class="chip" data-val="XCD2" data-color="gold">Michelin XCD2</div>
+        <div class="chip" data-val="BFG On-Road" data-color="red">BFG On-Road</div>
+        <div class="chip" data-val="Belum tahu" data-color="grey">Belum tahu</div>
+      </div>
+
+      <label>Status</label>
+      <div class="chips" data-group="status">
+        <div class="chip" data-val="Kunjungan" data-color="grey">Kunjungan</div>
+        <div class="chip" data-val="Prospek" data-color="gold">Prospek</div>
+        <div class="chip" data-val="Closing" data-color="green">Closing</div>
+      </div>
+
+      <div id="pcsWrap" class="hidden">
+        <label>Jumlah Pcs Terjual</label>
+        <input type="number" id="pcs" placeholder="0" inputmode="numeric" min="0">
+      </div>
+
+      <label>Catatan</label>
+      <textarea id="catatan" placeholder="Catatan tambahan (opsional)"></textarea>
+
+      <div class="undian-row">
+        <input type="checkbox" id="undian" checked>
+        <label for="undian">Ikutkan dalam undian berhadiah</label>
+      </div>
+    </div>
+    <button class="btn btn-blue" id="saveBtn">SIMPAN DATA</button>
+  </div>
+
+  <!-- LIST -->
+  <div id="pgList" class="hidden">
+    <div class="warn" id="storeWarn"></div>
+    <div class="card">
+      <h2>Daftar Data (<span id="listCount">0</span>)</h2>
+      <div id="listBody"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" id="exportBtn">⬇ Export CSV</button>
+      <button class="btn btn-ghost btn-sm" id="demoBtn">🧪 Isi Contoh</button>
+      <button class="btn btn-ghost btn-sm" id="clearBtn">🗑 Reset</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="on" data-pg="pgInput"><span class="ic">➕</span>Input</button>
+  <button data-pg="pgList"><span class="ic">📋</span>Data</button>
+</div>
+
+<style>
+  .entry{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .entry:last-child{border-bottom:none}
+  .entry .info{flex:1;min-width:0}
+  .entry .nm{font-weight:700;font-size:15px}
+  .entry .meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .badge{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px;margin-right:4px}
+  .b-close{background:#e3f6ec;color:var(--green)}
+  .b-pros{background:#fff3d1;color:#b98a00}
+  .b-kunj{background:#eef1f6;color:var(--muted)}
+  .b-xcd{background:#e6ecfa;color:var(--blue)}
+  .b-bfg{background:#fbe3e7;color:var(--red)}
+  .del{background:none;border:none;color:#c8102e;font-size:20px;cursor:pointer;padding:4px 8px}
+  .empty{text-align:center;color:var(--muted);padding:24px 0;font-size:14px}
+</style>
+
+<div class="toast" id="toast">Tersimpan ✓</div>
+
+<script>
+(function(){
+  var KEY="grebek_pasar_2026",WON="grebek_pasar_won";
+  var storeOK=true,mem=[];
+  function load(){try{var v=localStorage.getItem(KEY);return v?JSON.parse(v):[];}catch(e){storeOK=false;return mem;}}
+  function save(v){try{localStorage.setItem(KEY,JSON.stringify(v));}catch(e){storeOK=false;mem=v;}}
+  var data=load();if(!storeOK)mem=data;
+
+  try{document.getElementById("petugas").value=localStorage.getItem("gp_petugas")||"";
+    var lk=localStorage.getItem("gp_lokasi");if(lk)document.getElementById("lokasi").value=lk;}catch(e){}
+  document.getElementById("petugas").addEventListener("input",function(){try{localStorage.setItem("gp_petugas",this.value);}catch(e){}});
+  document.getElementById("lokasi").addEventListener("change",function(){try{localStorage.setItem("gp_lokasi",this.value);}catch(e){}});
+
+  var sel={kendaraan:"",produk:"",status:""};
+  document.querySelectorAll(".chips").forEach(function(group){
+    var g=group.getAttribute("data-group");
+    group.querySelectorAll(".chip").forEach(function(chip){
+      chip.addEventListener("click",function(){
+        var was=chip.classList.contains("on");
+        group.querySelectorAll(".chip").forEach(function(c){c.classList.remove("on","gold","red","green","grey");});
+        if(!was){chip.classList.add("on");var col=chip.getAttribute("data-color");if(col)chip.classList.add(col);sel[g]=chip.getAttribute("data-val");}
+        else sel[g]="";
+        if(g==="status")document.getElementById("pcsWrap").classList.toggle("hidden",sel.status!=="Closing");
+      });
+    });
+  });
+
+  document.querySelectorAll(".nav button").forEach(function(b){
+    b.addEventListener("click",function(){
+      document.querySelectorAll(".nav button").forEach(function(x){x.classList.remove("on");});
+      b.classList.add("on");
+      ["pgInput","pgList"].forEach(function(p){document.getElementById(p).classList.add("hidden");});
+      document.getElementById(b.getAttribute("data-pg")).classList.remove("hidden");
+      if(b.getAttribute("data-pg")==="pgList")renderList();
+    });
+  });
+
+  var toastEl=document.getElementById("toast"),tTimer;
+  function toast(m,c){toastEl.textContent=m;toastEl.style.background=c||"var(--green)";toastEl.classList.add("show");clearTimeout(tTimer);tTimer=setTimeout(function(){toastEl.classList.remove("show");},1800);}
+
+  document.getElementById("saveBtn").addEventListener("click",function(){
+    var nama=document.getElementById("nama").value.trim();
+    if(!nama){toast("Nama wajib diisi","#c8102e");return;}
+    data.push({id:Date.now(),
+      tgl:new Date().toLocaleString("id-ID",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}),
+      petugas:document.getElementById("petugas").value.trim(),lokasi:document.getElementById("lokasi").value,
+      nama:nama,wa:document.getElementById("wa").value.trim(),kendaraan:sel.kendaraan,
+      ukuran:document.getElementById("ukuran").value.trim(),merk:document.getElementById("merk").value.trim(),
+      produk:sel.produk,status:sel.status||"Kunjungan",
+      pcs:sel.status==="Closing"?(parseInt(document.getElementById("pcs").value)||0):0,
+      catatan:document.getElementById("catatan").value.trim(),undian:document.getElementById("undian").checked});
+    save(data);updateTally();resetForm();toast("Data tersimpan ✓");
+  });
+
+  function resetForm(){
+    ["nama","wa","ukuran","merk","pcs","catatan"].forEach(function(id){document.getElementById(id).value="";});
+    document.getElementById("undian").checked=true;
+    document.getElementById("pcsWrap").classList.add("hidden");
+    document.querySelectorAll(".chip").forEach(function(c){c.classList.remove("on","gold","red","green","grey");});
+    sel={kendaraan:"",produk:"",status:""};document.getElementById("nama").focus();
+  }
+
+  function updateTally(){
+    var pros=0,close=0,pcs=0,xcd=0,bfg=0;
+    data.forEach(function(d){if(d.status==="Prospek")pros++;if(d.status==="Closing"){close++;pcs+=d.pcs;}if(d.produk==="XCD2")xcd++;if(d.produk==="BFG On-Road")bfg++;});
+    document.getElementById("tTotal").textContent=data.length;
+    document.getElementById("tPros").textContent=pros;
+    document.getElementById("tClose").textContent=close;
+    document.getElementById("tPcs").textContent=pcs;
+    document.getElementById("tXcd").textContent=xcd;
+    document.getElementById("tBfg").textContent=bfg;
+  }
+
+  function esc(s){return(s||"").replace(/[<>&"]/g,function(c){return{"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c];});}
+  function renderList(){
+    var w=document.getElementById("storeWarn");
+    if(!storeOK){w.style.display="block";w.innerHTML="⚠ Penyimpanan permanen tidak aktif. <b>Buka lewat GitHub Pages atau download & buka langsung di browser</b> agar data aman.";}
+    else w.style.display="none";
+    document.getElementById("listCount").textContent=data.length;
+    var body=document.getElementById("listBody");
+    if(!data.length){body.innerHTML='<div class="empty">Belum ada data. Klik "Isi Contoh" untuk melihat tampilan.</div>';return;}
+    body.innerHTML="";
+    data.slice().reverse().forEach(function(d){
+      var stB=d.status==="Closing"?"b-close":d.status==="Prospek"?"b-pros":"b-kunj";
+      var prB=d.produk==="XCD2"?"b-xcd":d.produk==="BFG On-Road"?"b-bfg":"";
+      var el=document.createElement("div");el.className="entry";
+      el.innerHTML='<div class="info"><div class="nm">'+esc(d.nama)+(d.wa?' <span style="font-weight:400;color:var(--muted);font-size:13px">· '+esc(d.wa)+'</span>':'')+'</div>'+
+        '<div style="margin:4px 0"><span class="badge '+stB+'">'+d.status+'</span>'+(d.produk?'<span class="badge '+prB+'">'+d.produk+'</span>':'')+(d.pcs?'<span class="badge b-close">'+d.pcs+' pcs</span>':'')+'</div>'+
+        '<div class="meta">'+[d.kendaraan,d.ukuran,d.merk].filter(Boolean).join(" · ")+' — '+esc(d.petugas||"?")+' · '+d.tgl+'</div></div>'+
+        '<button class="del" data-id="'+d.id+'">✕</button>';
+      body.appendChild(el);
+    });
+    body.querySelectorAll(".del").forEach(function(b){
+      b.addEventListener("click",function(){
+        if(!confirm("Hapus data ini?"))return;
+        var id=parseInt(b.getAttribute("data-id"));
+        data=data.filter(function(x){return x.id!==id;});save(data);updateTally();renderList();
+      });
+    });
+  }
+
+  document.getElementById("exportBtn").addEventListener("click",function(){
+    if(!data.length){toast("Belum ada data","#c8102e");return;}
+    var head=["Tanggal","Petugas","Lokasi","Nama","WA","Kendaraan","Ukuran","Merk Lama","Produk Minat","Status","Pcs","Ikut Undian","Catatan"];
+    var rows=data.map(function(d){return[d.tgl,d.petugas,d.lokasi,d.nama,d.wa,d.kendaraan,d.ukuran,d.merk,d.produk,d.status,d.pcs,d.undian?"Ya":"Tidak",d.catatan];});
+    var csv=[head].concat(rows).map(function(r){return r.map(function(c){return '"'+String(c==null?"":c).replace(/"/g,'""')+'"';}).join(",");}).join("\r\n");
+    var blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8;"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);
+    a.download="Data_GrebekPasar_"+new Date().toISOString().slice(0,10)+".csv";
+    document.body.appendChild(a);a.click();document.body.removeChild(a);toast("CSV terunduh ✓");
+  });
+
+  document.getElementById("demoBtn").addEventListener("click",function(){
+    var demo=[
+      {nama:"Pak Suyatno",wa:"081334567890",kendaraan:"Pick-up",ukuran:"195R14",merk:"GT Savero",produk:"XCD2",status:"Closing",pcs:4,catatan:"Angkut sayur Cepogo, minta pasang di tempat",undian:true},
+      {nama:"Bu Marni",wa:"082145678901",kendaraan:"Pick-up",ukuran:"185R14",merk:"Dunlop",produk:"XCD2",status:"Prospek",pcs:0,catatan:"Bandingkan harga dulu, WA follow up",undian:true},
+      {nama:"Pak Joko",wa:"085612345678",kendaraan:"Truk kecil",ukuran:"750R16",merk:"Bridgestone",produk:"XCD2",status:"Prospek",pcs:0,catatan:"Armada 3 unit",undian:true},
+      {nama:"Mas Rifai",wa:"087822334455",kendaraan:"Mobil pribadi",ukuran:"185/65R15",merk:"Accelera",produk:"BFG On-Road",status:"Closing",pcs:2,catatan:"Avanza, ganti 2 depan",undian:true},
+      {nama:"Pak Hendra",wa:"",kendaraan:"Mobil pribadi",ukuran:"195/60R15",merk:"Michelin lama",produk:"BFG On-Road",status:"Kunjungan",pcs:0,catatan:"Sekadar tanya-tanya",undian:false},
+      {nama:"Bu Sari",wa:"081298765432",kendaraan:"Pick-up",ukuran:"195R14",merk:"Forceum",produk:"XCD2",status:"Closing",pcs:4,catatan:"Pengepul hasil bumi",undian:true}
+    ];
+    var lok=document.getElementById("lokasi").value,ptg=document.getElementById("petugas").value.trim()||"Demo";
+    var base=Date.now();
+    demo.forEach(function(d,i){d.id=base+i;d.lokasi=lok;d.petugas=ptg;
+      d.tgl=new Date().toLocaleString("id-ID",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+      data.push(d);});
+    save(data);updateTally();renderList();toast("6 contoh data ditambahkan ✓");
+  });
+
+  document.getElementById("clearBtn").addEventListener("click",function(){
+    if(!confirm("Hapus SEMUA data? (Export dulu jika perlu)"))return;
+    if(!confirm("Tidak bisa dikembalikan. Lanjut?"))return;
+    data=[];save(data);try{localStorage.setItem(WON,"[]");}catch(e){}
+    updateTally();renderList();toast("Semua data dihapus","#c8102e");
+  });
+
+  updateTally();
+})();
+</script>
+</body>
+</html>

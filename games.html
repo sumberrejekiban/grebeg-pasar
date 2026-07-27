@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Permainan — Grebek Pasar</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .wheel-wrap{position:relative;width:min(88vw,340px);margin:8px auto 4px}
+  canvas#wheel{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 18px rgba(11,42,107,.25))}
+  .pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+    width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;
+    border-top:26px solid var(--red);z-index:5;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+  .hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:46px;height:46px;
+    background:#fff;border:4px solid var(--gold);border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-weight:800;color:var(--blue);font-size:11px;z-index:4}
+  .result{text-align:center;font-size:22px;font-weight:800;color:var(--blue);min-height:30px;margin:10px 0 4px}
+  .result small{display:block;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .draw-box{text-align:center;padding:22px;background:linear-gradient(135deg,#fffef7,#fff6d6);
+    border-radius:12px;border:2px dashed var(--gold)}
+  .draw-name{font-size:30px;font-weight:800;color:var(--blue);min-height:40px;margin:8px 0}
+  .draw-sub{font-size:12px;color:var(--muted)}
+  .winner{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-weight:700}
+  .winner:last-child{border-bottom:none}
+  details{margin-top:10px}
+  summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted)}
+  details textarea{margin-top:8px;min-height:120px}
+
+  /* quiz */
+  .q-num{font-size:12px;font-weight:800;color:var(--gold);letter-spacing:1px;text-transform:uppercase}
+  .q-text{font-size:18px;font-weight:700;margin:6px 0 14px;line-height:1.35}
+  .opt{display:block;width:100%;text-align:left;padding:13px 14px;border:1.5px solid var(--line);
+    border-radius:11px;background:#fbfcfe;font-size:15px;font-weight:600;margin-bottom:9px;cursor:pointer;transition:.12s}
+  .opt.correct{background:#e3f6ec;border-color:var(--green);color:var(--green)}
+  .opt.wrong{background:#fbe3e7;border-color:var(--red);color:var(--red)}
+  .opt:disabled{cursor:default}
+  .q-progress{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:14px}
+  .q-progress div{height:100%;background:var(--gold);width:0;transition:.3s}
+  .score{text-align:center}
+  .score .big{font-size:44px;font-weight:800;color:var(--blue)}
+
+  /* confetti */
+  .conf{position:fixed;top:-10px;width:10px;height:14px;z-index:60;pointer-events:none;border-radius:2px}
+</style>
+</head>
+<body class="pad-bottom">
+<header class="app-header">
+  <a class="back" href="index.html">‹ Menu</a>
+  <div class="brand">Permainan <span class="tag">Grebek</span></div>
+</header>
+
+<div class="wrap">
+  <!-- RODA PUTAR -->
+  <div id="pgWheel">
+    <div class="card">
+      <h2>Roda Putar Hadiah</h2>
+      <div class="wheel-wrap">
+        <div class="pointer"></div>
+        <canvas id="wheel" width="600" height="600"></canvas>
+        <div class="hub">PUTAR</div>
+      </div>
+      <div class="result" id="wheelResult"><small>Tekan tombol untuk memutar</small></div>
+      <button class="btn btn-gold" id="spinBtn">🎡 PUTAR RODA</button>
+      <details>
+        <summary>⚙ Atur daftar hadiah (1 baris = 1 hadiah)</summary>
+        <textarea id="prizeEdit"></textarea>
+        <button class="btn btn-ghost btn-sm" id="savePrize" style="margin-top:8px">Simpan Hadiah</button>
+      </details>
+    </div>
+  </div>
+
+  <!-- UNDIAN -->
+  <div id="pgDraw" class="hidden">
+    <div class="card">
+      <h2>Undian Nama Terdaftar</h2>
+      <div class="draw-box">
+        <div class="draw-sub">Peserta: <b id="drawCount">0</b> orang</div>
+        <div class="draw-name" id="drawName">—</div>
+        <div class="draw-sub" id="drawWa"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-gold btn-sm" id="drawBtn">🎁 UNDI</button>
+        <button class="btn btn-ghost btn-sm" id="resetWin">Reset</button>
+      </div>
+      <div id="winnerList" style="margin-top:12px"></div>
+      <details>
+        <summary>⚙ Peserta kosong? Tempel nama manual (1 baris = 1 nama)</summary>
+        <textarea id="manualNames" placeholder="Pak Suyatno&#10;Bu Marni&#10;Pak Joko"></textarea>
+        <button class="btn btn-ghost btn-sm" id="useManual" style="margin-top:8px">Pakai Daftar Ini</button>
+      </details>
+    </div>
+  </div>
+
+  <!-- KUIS -->
+  <div id="pgQuiz" class="hidden">
+    <div class="card">
+      <h2>Kuis Ban Berhadiah</h2>
+      <div id="quizArea">
+        <div class="q-progress"><div id="qBar"></div></div>
+        <div class="q-num" id="qNum">Soal 1</div>
+        <div class="q-text" id="qText"></div>
+        <div id="qOpts"></div>
+      </div>
+      <div id="quizEnd" class="hidden score">
+        <div class="q-num">Skor Kamu</div>
+        <div class="big"><span id="qScore">0</span>/5</div>
+        <p id="qMsg" style="color:var(--muted);font-size:14px"></p>
+        <button class="btn btn-gold btn-sm" id="quizRetry">Main Lagi</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="on" data-pg="pgWheel"><span class="ic">🎡</span>Roda</button>
+  <button data-pg="pgDraw"><span class="ic">🎁</span>Undian</button>
+  <button data-pg="pgQuiz"><span class="ic">❓</span>Kuis</button>
+</div>
+
+<div class="toast" id="toast">✓</div>
+
+<script>
+(function(){
+  var toastEl=document.getElementById("toast"),tt;
+  function toast(m,c){toastEl.textContent=m;toastEl.style.background=c||"var(--green)";toastEl.classList.add("show");clearTimeout(tt);tt=setTimeout(function(){toastEl.classList.remove("show");},1600);}
+
+  /* nav */
+  document.querySelectorAll(".nav button").forEach(function(b){
+    b.addEventListener("click",function(){
+      document.querySelectorAll(".nav button").forEach(function(x){x.classList.remove("on");});
+      b.classList.add("on");
+      ["pgWheel","pgDraw","pgQuiz"].forEach(function(p){document.getElementById(p).classList.add("hidden");});
+      document.getElementById(b.getAttribute("data-pg")).classList.remove("hidden");
+      if(b.getAttribute("data-pg")==="pgDraw")refreshDraw();
+    });
+  });
+
+  /* ===== CONFETTI ===== */
+  function confetti(){
+    var colors=["#0b2a6b","#ffc400","#c8102e","#1f9d55","#12377f"];
+    for(var i=0;i<70;i++){
+      (function(){
+        var d=document.createElement("div");d.className="conf";
+        d.style.left=Math.random()*100+"vw";
+        d.style.background=colors[Math.floor(Math.random()*colors.length)];
+        d.style.transform="rotate("+Math.random()*360+"deg)";
+        document.body.appendChild(d);
+        var dur=1800+Math.random()*1400,drift=(Math.random()-.5)*160;
+        d.animate([{transform:"translate(0,0) rotate(0)",opacity:1},
+          {transform:"translate("+drift+"px,110vh) rotate("+(720+Math.random()*360)+"deg)",opacity:.9}],
+          {duration:dur,easing:"cubic-bezier(.2,.6,.4,1)"}).onfinish=function(){d.remove();};
+      })();
+    }
+  }
+
+  /* ===== RODA PUTAR ===== */
+  var PKEY="grebek_prizes";
+  var defaultPrizes=["Diskon Rp 50.000","Gantungan Kunci","Kaos Michelin","Coba Lagi","Voucher Spooring","Topi Michelin","Diskon Rp 25.000","Souvenir"];
+  var prizes=defaultPrizes.slice();
+  try{var p=localStorage.getItem(PKEY);if(p)prizes=JSON.parse(p);}catch(e){}
+  document.getElementById("prizeEdit").value=prizes.join("\n");
+
+  var cv=document.getElementById("wheel"),ctx=cv.getContext("2d");
+  var R=cv.width/2, rot=0, spinning=false;
+  var palette=["#0b2a6b","#ffc400","#12377f","#e9edf6","#0b2a6b","#ffc400","#12377f","#e9edf6"];
+
+  function draw(){
+    var n=prizes.length,seg=2*Math.PI/n;
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for(var i=0;i<n;i++){
+      var a0=i*seg+rot,a1=a0+seg;
+      ctx.beginPath();ctx.moveTo(R,R);ctx.arc(R,R,R-6,a0,a1);ctx.closePath();
+      ctx.fillStyle=palette[i%palette.length];ctx.fill();
+      ctx.strokeStyle="#fff";ctx.lineWidth=3;ctx.stroke();
+      /* label */
+      ctx.save();ctx.translate(R,R);ctx.rotate(a0+seg/2);
+      var light=ctx.fillStyle==="#ffc400"||ctx.fillStyle==="#e9edf6";
+      ctx.fillStyle=light?"#0b2a6b":"#fff";
+      ctx.textAlign="right";ctx.font="bold 22px sans-serif";
+      var t=prizes[i];if(t.length>16)t=t.slice(0,15)+"…";
+      ctx.fillText(t,R-24,8);ctx.restore();
+    }
+    ctx.beginPath();ctx.arc(R,R,R-6,0,2*Math.PI);ctx.strokeStyle="#0b2a6b";ctx.lineWidth=6;ctx.stroke();
+  }
+  draw();
+
+  function spin(){
+    if(spinning||!prizes.length)return;spinning=true;
+    document.getElementById("wheelResult").innerHTML="<small>Memutar…</small>";
+    var n=prizes.length,seg=2*Math.PI/n;
+    var target=rot+ (6+Math.random()*4)*2*Math.PI + Math.random()*2*Math.PI;
+    var start=rot,dur=4200+Math.random()*600,t0=null;
+    function ease(t){return 1-Math.pow(1-t,3);}
+    function step(ts){
+      if(!t0)t0=ts;var p=Math.min((ts-t0)/dur,1);
+      rot=start+(target-start)*ease(p);draw();
+      if(p<1)requestAnimationFrame(step);
+      else{
+        spinning=false;
+        var norm=((rot%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+        var a=((1.5*Math.PI-norm)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+        var idx=Math.floor(a/seg)%n;
+        var prize=prizes[idx];
+        document.getElementById("wheelResult").innerHTML="<small>Selamat, dapat</small>"+prize;
+        if(!/coba lagi/i.test(prize))confetti();
+      }
+    }
+    requestAnimationFrame(step);
+  }
+  document.getElementById("spinBtn").addEventListener("click",spin);
+  document.querySelector(".hub").addEventListener("click",spin);
+  document.getElementById("savePrize").addEventListener("click",function(){
+    var arr=document.getElementById("prizeEdit").value.split("\n").map(function(s){return s.trim();}).filter(Boolean);
+    if(arr.length<2){toast("Minimal 2 hadiah","#c8102e");return;}
+    prizes=arr;try{localStorage.setItem(PKEY,JSON.stringify(prizes));}catch(e){}
+    draw();toast("Hadiah tersimpan ✓");
+  });
+
+  /* ===== UNDIAN ===== */
+  var WON="grebek_pasar_won",manualList=null;
+  function getPool(){
+    if(manualList)return manualList.map(function(nm,i){return{id:"m"+i,nama:nm,wa:"",lokasi:"Manual"};});
+    var data=[];try{var v=localStorage.getItem("grebek_pasar_2026");if(v)data=JSON.parse(v);}catch(e){}
+    return data.filter(function(d){return d.undian;});
+  }
+  function getWon(){try{var v=localStorage.getItem(WON);return v?JSON.parse(v):[];}catch(e){return [];}}
+  function setWon(v){try{localStorage.setItem(WON,JSON.stringify(v));}catch(e){}}
+  function refreshDraw(){
+    var pool=getPool(),won=getWon();
+    var remain=pool.filter(function(d){return won.indexOf(d.id)<0;});
+    document.getElementById("drawCount").textContent=remain.length;
+    var wl=document.getElementById("winnerList");
+    var winners=pool.filter(function(d){return won.indexOf(d.id)>=0;});
+    if(!winners.length){wl.innerHTML="";return;}
+    wl.innerHTML='<label class="first">Pemenang</label>';
+    winners.forEach(function(d){wl.innerHTML+='<div class="winner">🏆 '+esc(d.nama)+' <span style="font-weight:400;color:var(--muted);font-size:13px">'+esc(d.wa||"")+'</span></div>';});
+  }
+  function esc(s){return(s||"").replace(/[<>&"]/g,function(c){return{"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c];});}
+  document.getElementById("drawBtn").addEventListener("click",function(){
+    var pool=getPool(),won=getWon();
+    var remain=pool.filter(function(d){return won.indexOf(d.id)<0;});
+    if(!remain.length){toast("Tidak ada peserta","#c8102e");return;}
+    var nameEl=document.getElementById("drawName"),waEl=document.getElementById("drawWa"),s=0,max=20;
+    var iv=setInterval(function(){
+      var r=remain[Math.floor(Math.random()*remain.length)];nameEl.textContent=r.nama;waEl.textContent="";s++;
+      if(s>=max){clearInterval(iv);
+        var w=remain[Math.floor(Math.random()*remain.length)];
+        nameEl.textContent="🎉 "+w.nama;waEl.textContent=(w.wa||"")+" · "+(w.lokasi||"");
+        won.push(w.id);setWon(won);refreshDraw();confetti();
+      }
+    },70);
+  });
+  document.getElementById("resetWin").addEventListener("click",function(){
+    if(!confirm("Reset daftar pemenang?"))return;setWon([]);refreshDraw();
+    document.getElementById("drawName").textContent="—";document.getElementById("drawWa").textContent="";
+  });
+  document.getElementById("useManual").addEventListener("click",function(){
+    var arr=document.getElementById("manualNames").value.split("\n").map(function(s){return s.trim();}).filter(Boolean);
+    if(!arr.length){toast("Isi nama dulu","#c8102e");return;}
+    manualList=arr;setWon([]);refreshDraw();toast(arr.length+" nama dipakai ✓");
+  });
+
+  /* ===== KUIS ===== */
+  var quiz=[
+    {q:"Michelin XCD2 dirancang untuk kendaraan jenis apa?",o:["Motor sport","Pick-up / truk kecil (LCV)","Sepeda","Bus tingkat"],a:1},
+    {q:"Apa keunggulan utama ban untuk kendaraan muatan?",o:["Warna mengkilap","Daya tahan & efisiensi cost-per-km","Suara mesin","Bentuk pelek"],a:1},
+    {q:"Tekanan angin ban yang benar membuat…",o:["Boros BBM","Ban cepat botak","Ban awet & irit BBM","Setir berat"],a:2},
+    {q:"BFGoodrich (BFG) On-Road cocok untuk?",o:["Balap F1","Pemakaian harian di jalan aspal","Perahu","Pesawat"],a:1},
+    {q:"Kapan sebaiknya ban diganti?",o:["Saat warna pudar","Saat kembangan sudah tipis / aus","Setiap minggu","Tidak pernah"],a:1}
+  ];
+  var qi=0,qScore=0;
+  function loadQ(){
+    document.getElementById("quizArea").classList.remove("hidden");
+    document.getElementById("quizEnd").classList.add("hidden");
+    var item=quiz[qi];
+    document.getElementById("qNum").textContent="Soal "+(qi+1)+" / "+quiz.length;
+    document.getElementById("qText").textContent=item.q;
+    document.getElementById("qBar").style.width=((qi)/quiz.length*100)+"%";
+    var box=document.getElementById("qOpts");box.innerHTML="";
+    item.o.forEach(function(opt,i){
+      var b=document.createElement("button");b.className="opt";b.textContent=opt;
+      b.addEventListener("click",function(){
+        var all=box.querySelectorAll(".opt");all.forEach(function(x){x.disabled=true;});
+        if(i===item.a){b.classList.add("correct");qScore++;}
+        else{b.classList.add("wrong");all[item.a].classList.add("correct");}
+        setTimeout(function(){qi++;if(qi<quiz.length)loadQ();else endQuiz();},900);
+      });
+      box.appendChild(b);
+    });
+  }
+  function endQuiz(){
+    document.getElementById("quizArea").classList.add("hidden");
+    document.getElementById("quizEnd").classList.remove("hidden");
+    document.getElementById("qScore").textContent=qScore;
+    var msg=qScore>=4?"Hebat! Layak dapat hadiah 🎁":qScore>=2?"Lumayan! Coba lagi ya":"Belajar dulu di stand Michelin 😄";
+    document.getElementById("qMsg").textContent=msg;
+    if(qScore>=4)confetti();
+  }
+  document.getElementById("quizRetry").addEventListener("click",function(){qi=0;qScore=0;loadQ();});
+  loadQ();
+})();
+</script>
+</body>
+</html>

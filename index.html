@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Grebek Pasar Michelin — Menu</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .hero{background:linear-gradient(135deg,var(--blue),var(--blue-2));color:#fff;
+    text-align:center;padding:34px 18px 30px}
+  .hero .kicker{color:var(--gold);font-weight:800;letter-spacing:2px;font-size:12px;text-transform:uppercase}
+  .hero h1{margin:6px 0 4px;font-size:30px;font-weight:800;line-height:1.05}
+  .hero p{margin:0;color:#c9d5f2;font-size:13px}
+  .hero .prods{display:flex;justify-content:center;gap:8px;margin-top:14px}
+  .hero .pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
+    padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700}
+  .hero .pill.gold{background:var(--gold);color:var(--blue);border-color:var(--gold)}
+  .hero .pill.red{background:var(--red);color:#fff;border-color:var(--red)}
+  .menu{display:grid;gap:12px}
+  .tile{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);cursor:pointer;transition:.12s}
+  .tile:active{transform:scale(.99)}
+  .tile .ic{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font-size:26px;flex-shrink:0}
+  .tile .ic.blue{background:#e6ecfa}
+  .tile .ic.gold{background:#fff3d1}
+  .tile .tx b{display:block;font-size:16px;color:var(--ink)}
+  .tile .tx span{font-size:13px;color:var(--muted)}
+  .tile .arw{margin-left:auto;color:var(--muted);font-size:22px}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="kicker">Sumber Rejeki Group</div>
+  <h1>GREBEK PASAR<br>MICHELIN</h1>
+  <p>Explore Market Ban LCV · 21–28 Juli 2026</p>
+  <div class="prods">
+    <span class="pill gold">Michelin XCD2</span>
+    <span class="pill red">BFG On-Road</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="tally">
+    <div class="stat"><b id="tTotal">0</b><span>Total Data</span></div>
+    <div class="stat green"><b id="tClose">0</b><span>Closing</span></div>
+    <div class="stat gold"><b id="tPcs">0</b><span>Pcs Terjual</span></div>
+  </div>
+
+  <div class="menu">
+    <a class="tile" href="data.html">
+      <div class="ic blue">📝</div>
+      <div class="tx"><b>Input Data Pengunjung</b><span>Catat prospek & closing (offline)</span></div>
+      <div class="arw">›</div>
+    </a>
+    <a class="tile" href="games.html">
+      <div class="ic gold">🎡</div>
+      <div class="tx"><b>Permainan & Undian</b><span>Roda Putar · Undian · Kuis</span></div>
+      <div class="arw">›</div>
+    </a>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>Alur Singkat</h2>
+    <p style="margin:0;font-size:14px;color:var(--muted);line-height:1.6">
+      1. Tarik pengunjung ke stand (cek angin gratis + roda putar).<br>
+      2. Wajib isi data dulu sebelum main / ambil souvenir.<br>
+      3. Sore hari: undi hadiah dari peserta terdaftar (umumkan lewat sound).<br>
+      4. Tiap malam: <b>Export CSV</b> → gabung ke Google Sheet master.
+    </p>
+  </div>
+</div>
+
+<script>
+(function(){
+  var data=[];
+  try{var v=localStorage.getItem("grebek_pasar_2026");if(v)data=JSON.parse(v);}catch(e){}
+  var close=0,pcs=0;
+  data.forEach(function(d){if(d.status==="Closing"){close++;pcs+=(d.pcs||0);}});
+  document.getElementById("tTotal").textContent=data.length;
+  document.getElementById("tClose").textContent=close;
+  document.getElementById("tPcs").textContent=pcs;
+})();
+</script>
+</body>
+</html>
