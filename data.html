@@ -94,13 +94,24 @@
     <div class="warn" id="storeWarn"></div>
     <div class="card">
       <h2>Daftar Data (<span id="listCount">0</span>)</h2>
+      <div id="syncStat"></div>
       <div id="listBody"></div>
     </div>
     <div class="btn-row">
+      <button class="btn btn-blue btn-sm" id="syncBtn">☁ Sinkron ke Sheet</button>
       <button class="btn btn-ghost btn-sm" id="exportBtn">⬇ Export CSV</button>
+    </div>
+    <div class="btn-row">
       <button class="btn btn-ghost btn-sm" id="demoBtn">🧪 Isi Contoh</button>
       <button class="btn btn-ghost btn-sm" id="clearBtn">🗑 Reset</button>
     </div>
+    <details style="margin-top:12px">
+      <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--muted)">⚙ Setelan Google Sheet (isi sekali)</summary>
+      <label>URL Web App Apps Script</label>
+      <input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/..../exec" autocomplete="off">
+      <button class="btn btn-ghost btn-sm" id="saveUrl" style="margin-top:8px">Simpan URL</button>
+      <p style="font-size:12px;color:var(--muted);margin:8px 0 0;line-height:1.5">Cara buat URL ada di file <b>apps-script.gs</b> & README. Kosongkan jika hanya pakai CSV.</p>
+    </details>
   </div>
 </div>
 
@@ -121,6 +132,9 @@
   .b-kunj{background:#eef1f6;color:var(--muted)}
   .b-xcd{background:#e6ecfa;color:var(--blue)}
   .b-bfg{background:#fbe3e7;color:var(--red)}
+  .b-nosync{background:#ffe8cc;color:#b35900}
+  .b-sync{background:#e3f6ec;color:var(--green)}
+  .sync-info{font-size:12px;background:#eef1f6;border-radius:8px;padding:8px 10px;margin-bottom:10px;color:var(--muted)}
   .del{background:none;border:none;color:#c8102e;font-size:20px;cursor:pointer;padding:4px 8px}
   .empty{text-align:center;color:var(--muted);padding:24px 0;font-size:14px}
 </style>
@@ -177,8 +191,10 @@
       ukuran:document.getElementById("ukuran").value.trim(),merk:document.getElementById("merk").value.trim(),
       produk:sel.produk,status:sel.status||"Kunjungan",
       pcs:sel.status==="Closing"?(parseInt(document.getElementById("pcs").value)||0):0,
-      catatan:document.getElementById("catatan").value.trim(),undian:document.getElementById("undian").checked});
+      catatan:document.getElementById("catatan").value.trim(),undian:document.getElementById("undian").checked,synced:false});
     save(data);updateTally();resetForm();toast("Data tersimpan ✓");
+    var last=data[data.length-1];
+    pushRows([last]).then(function(r){if(r.ok){last.synced=true;save(data);}});
   });
 
   function resetForm(){
@@ -206,6 +222,7 @@
     if(!storeOK){w.style.display="block";w.innerHTML="⚠ Penyimpanan permanen tidak aktif. <b>Buka lewat GitHub Pages atau download & buka langsung di browser</b> agar data aman.";}
     else w.style.display="none";
     document.getElementById("listCount").textContent=data.length;
+    renderSyncStat();
     var body=document.getElementById("listBody");
     if(!data.length){body.innerHTML='<div class="empty">Belum ada data. Klik "Isi Contoh" untuk melihat tampilan.</div>';return;}
     body.innerHTML="";
@@ -214,7 +231,7 @@
       var prB=d.produk==="XCD2"?"b-xcd":d.produk==="BFG On-Road"?"b-bfg":"";
       var el=document.createElement("div");el.className="entry";
       el.innerHTML='<div class="info"><div class="nm">'+esc(d.nama)+(d.wa?' <span style="font-weight:400;color:var(--muted);font-size:13px">· '+esc(d.wa)+'</span>':'')+'</div>'+
-        '<div style="margin:4px 0"><span class="badge '+stB+'">'+d.status+'</span>'+(d.produk?'<span class="badge '+prB+'">'+d.produk+'</span>':'')+(d.pcs?'<span class="badge b-close">'+d.pcs+' pcs</span>':'')+'</div>'+
+        '<div style="margin:4px 0"><span class="badge '+stB+'">'+d.status+'</span>'+(d.produk?'<span class="badge '+prB+'">'+d.produk+'</span>':'')+(d.pcs?'<span class="badge b-close">'+d.pcs+' pcs</span>':'')+(d.synced?'<span class="badge b-sync">✓ sheet</span>':'<span class="badge b-nosync">belum sync</span>')+'</div>'+
         '<div class="meta">'+[d.kendaraan,d.ukuran,d.merk].filter(Boolean).join(" · ")+' — '+esc(d.petugas||"?")+' · '+d.tgl+'</div></div>'+
         '<button class="del" data-id="'+d.id+'">✕</button>';
       body.appendChild(el);
@@ -250,7 +267,7 @@
     ];
     var lok=document.getElementById("lokasi").value,ptg=document.getElementById("petugas").value.trim()||"Demo";
     var base=Date.now();
-    demo.forEach(function(d,i){d.id=base+i;d.lokasi=lok;d.petugas=ptg;
+    demo.forEach(function(d,i){d.id=base+i;d.lokasi=lok;d.petugas=ptg;d.synced=false;
       d.tgl=new Date().toLocaleString("id-ID",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
       data.push(d);});
     save(data);updateTally();renderList();toast("6 contoh data ditambahkan ✓");
@@ -261,6 +278,48 @@
     if(!confirm("Tidak bisa dikembalikan. Lanjut?"))return;
     data=[];save(data);try{localStorage.setItem(WON,"[]");}catch(e){}
     updateTally();renderList();toast("Semua data dihapus","#c8102e");
+  });
+
+  /* ===== SINKRON GOOGLE SHEET ===== */
+  var URLKEY="gp_sheet_url";
+  function getUrl(){try{return localStorage.getItem(URLKEY)||"";}catch(e){return "";}}
+  var urlInput=document.getElementById("sheetUrl");
+  urlInput.value=getUrl();
+  document.getElementById("saveUrl").addEventListener("click",function(){
+    var u=urlInput.value.trim();
+    if(u&&!/^https:\/\/script\.google\.com\/macros\/s\//.test(u)){toast("URL harus dari script.google.com","#c8102e");return;}
+    try{localStorage.setItem(URLKEY,u);}catch(e){}
+    toast(u?"URL tersimpan ✓":"URL dikosongkan");renderSyncStat();
+  });
+
+  // kirim daftar entri ke Sheet. resolve {ok:true} jika terkirim, {ok:false} jika gagal/offline/tanpa URL
+  function pushRows(rows){
+    var url=getUrl();
+    if(!url||!rows.length)return Promise.resolve({ok:false,reason:"no-url"});
+    return fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({rows:rows})})
+      .then(function(){return {ok:true};})
+      .catch(function(){return {ok:false,reason:"net"};});
+  }
+
+  function renderSyncStat(){
+    var el=document.getElementById("syncStat");if(!el)return;
+    var unsent=data.filter(function(d){return !d.synced;}).length;
+    if(!getUrl()){el.innerHTML='<div class="sync-info">☁ Sinkron Sheet belum diatur. Data aman tersimpan di HP — pakai Export CSV, atau atur URL di setelan bawah.</div>';return;}
+    if(unsent===0){el.innerHTML='<div class="sync-info" style="background:#e3f6ec;color:#0f7a3d">✓ Semua data sudah masuk Google Sheet.</div>';}
+    else{el.innerHTML='<div class="sync-info" style="background:#ffe8cc;color:#b35900"><b>'+unsent+'</b> data belum masuk Sheet. Tekan "Sinkron ke Sheet" saat ada sinyal.</div>';}
+  }
+
+  document.getElementById("syncBtn").addEventListener("click",function(){
+    if(!getUrl()){toast("Atur URL Sheet dulu (setelan bawah)","#c8102e");return;}
+    var pending=data.filter(function(d){return !d.synced;});
+    if(!pending.length){toast("Semua sudah tersinkron ✓");return;}
+    var btn=this;btn.textContent="⏳ Mengirim…";btn.disabled=true;
+    pushRows(pending).then(function(r){
+      btn.disabled=false;btn.textContent="☁ Sinkron ke Sheet";
+      if(r.ok){pending.forEach(function(d){d.synced=true;});save(data);renderList();toast(pending.length+" data terkirim ke Sheet ✓");}
+      else{toast("Gagal kirim — cek internet/URL","#c8102e");}
+    });
   });
 
   updateTally();
