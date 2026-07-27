@@ -155,7 +155,7 @@
 
   /* ===== RODA PUTAR ===== */
   var PKEY="grebek_prizes";
-  var defaultPrizes=["Topi","Balpoin","Stiker","Balpoin","Stiker","Coba Lagi"];
+  var defaultPrizes=["Diskon Rp 50.000","Gantungan Kunci","Kaos Michelin","Coba Lagi","Voucher Spooring","Topi Michelin","Diskon Rp 25.000","Souvenir"];
   var prizes=defaultPrizes.slice();
   try{var p=localStorage.getItem(PKEY);if(p)prizes=JSON.parse(p);}catch(e){}
   document.getElementById("prizeEdit").value=prizes.join("\n");
